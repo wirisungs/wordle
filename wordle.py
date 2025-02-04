@@ -124,22 +124,25 @@ def prepare_game():
         valid_words = [word.rstrip() for word in valid_nonsecret_words.readlines()]
 
     with open("secret_words.txt", "r", encoding="ascii") as valid_secret_words:
-        secret_word = [word.rstrip() for word in valid_secret_words.readlines()]
+        secret_words = [word.rstrip() for word in valid_secret_words.readlines()]
 
     # Modify this if statement! This is just starter code.
-    if len(sys.argv) == 1:
-        secret_word = random.choice(secret_word)
-    elif len(sys.argv) == 2:
-        arg = sys.argv[1]
-        if arg.isdigit():
-            random.seed(int(arg))
-            secret_word = random.choice(secret_word)
-        elif arg in valid_words and arg.isalpha() and len(arg) == 5:
-            secret_word = arg
-        else:
-            raise ValueError("Invalid input: Argument must be a valid 5-letter word.")
+    if len(sys.argv) != 2:
+        raise ValueError("Invalid number of arguments. Please provide a single argument.")
+
+    argument = sys.argv[1]
+    secret_word = None  # Initialize secret_word
+
+    if argument.isdigit():
+        seed = int(argument)
+        random.seed(seed)
+        secret_word = random.choice(secret_words)
+    elif len(argument) == 5 and argument.islower() and argument.isalpha():
+        secret_word = argument  # Assign to secret_word
+        if argument not in valid_words:
+            valid_words.append(argument)
     else:
-        raise ValueError("Invalid input: Too many arguments passed.")
+        raise ValueError("Invalid input: Argument must be a valid 5-letter word.")
 
     # You do not have to change this return statement
     return secret_word, valid_words
@@ -156,8 +159,10 @@ def is_valid_guess(guess, valid_guesses):
     """
 
     # Modify this return statement!
-    return isinstance(guess, str) and guess in valid_guesses and len(guess) == 5
-
+    return (len(guess) == NUM_LETTERS and
+            guess.islower() and
+            guess.isalpha() and
+            guess in valid_guesses)
 
 def get_feedback(secret_word, guessed_word):
     """
@@ -176,21 +181,24 @@ def get_feedback(secret_word, guessed_word):
           There will only be 5 lowercase letters with the ANSI coloring
           in the returned value.
     """
-    feedback = [NOT_IN_WORD_COLOR] * NUM_LETTERS
-    secret_word_chars = list(secret_word)
-
-    # Modify this! This is just starter code.
-    for i in range(NUM_LETTERS):
-      if guessed_word == secret_word:
-        feedback[i] = CORRECT_COLOR
-        secret_word_chars[i] = None
+    feedback = [None] * NUM_LETTERS
+    secret_word_list = list(secret_word)
 
     for i in range(NUM_LETTERS):
-      if guessed_word[i] in secret_word_chars:
-        feedback[i] = WRONG_SPOT_COLOR
-        secret_word_chars[secret_word_chars.index(guessed_word[i])] = None
+        if guessed_word[i] == secret_word[i]:
+            feedback[i] = CORRECT_COLOR
+            secret_word_list[i] = None
 
-    # You do not have to change this return statement
+    for i in range(NUM_LETTERS):
+        if feedback[i] is None:
+            if guessed_word[i] in secret_word_list:
+                feedback[i] = WRONG_SPOT_COLOR
+                secret_word_list[secret_word_list.index(guessed_word[i])] = None  # Loại bỏ chữ cái này khỏi secret_word
+
+    for i in range(NUM_LETTERS):
+        if feedback[i] is None:
+            feedback[i] = NOT_IN_WORD_COLOR
+
     return color_word(feedback, guessed_word)
 
 
